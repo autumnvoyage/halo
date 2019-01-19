@@ -1,0 +1,13 @@
+[Unit]
+Description=Halo Arbiter
+After=network.target
+
+[Service]
+Type=simple
+User=halo
+WorkingDirectory=/opt/halo
+ExecStart=/opt/halo/bin/halo-arbiter --daemon
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
