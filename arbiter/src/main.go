@@ -1,39 +1,62 @@
 package main
 
 import (
-	"encoding/json"
-	"fmt"
+	"flag"
 	"log"
+	"net/http"
+	"time"
 
-	"github.com/graphql-go/graphql"
+	"github.com/gorilla/websocket"
 )
 
-func main() {
-	// Schema
-	fields := graphql.Fields{
-		"hello": &graphql.Field{
-			Type: graphql.String,
-			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-				return "world", nil
-			},
-		},
+var (
+	upgrader = websocket.Upgrader{
+		ReadBufferSize: 1024,
+		WriteBufferSize: 1024,
 	}
-	rootQuery := graphql.ObjectConfig{Name: "RootQuery", Fields: fields}
-	schemaConfig := graphql.SchemaConfig{Query: graphql.NewObject(rootQuery)}
-	schema, err := graphql.NewSchema(schemaConfig)
+	addr = flag.String("addr", "127.0.0.1:1941", "HTTP service address")
+)
+
+const (
+	writeWait = 10 * time.Second
+	maxMsgSize = 8192
+	pongWait = 60 * time.Second
+	pingPeriod = (pongWait * 9) / 10
+	closeGracePeriod = 10 * time.Second
+)
+
+func handleMsg(data []byte) {
+
+}
+
+func wsHandler(w http.ResponseWriter, r *http.Request) {
+	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		log.Fatalf("failed to create new schema, error: %v", err)
+		log.Fatalf("Failed to upgrade HTTP to WebSocket: %v", err)
+		return
 	}
-	query := `
-		{
-			hello
+	for {
+		msgType, data, err := conn.ReadMessage()
+		if err != nil {
+			log.Fatalf("ReadMessage() failed: %v", err)
+			return
 		}
-	`
-	params := graphql.Params{Schema: schema, RequestString: query}
-	r := graphql.Do(params)
-	if len(r.Errors) > 0 {
-		log.Fatalf("failed to execute graphql operation, errors: %+v", r.Errors)
+		if msgType == websocket.BinMessage {
+			return
+		}
+		handleMsg(data)
 	}
-	rJSON, _ := json.Marshal(r)
-	fmt.Printf("%s \n", rJSON) // {“data”:{“hello”:“world”}}
+}
+
+func httpSetup(addr string) {
+	http.HandleFunc("/", wsHandler)
+	log.Fatal(http.ListenAndServe(addr, nil))
+}
+
+func main() {
+	flag.Parse()
+	if len(flag.Args()) < 1 {
+		log.Fatal("Must specify listening address")
+	}
+	httpSetup(*addr)
 }
