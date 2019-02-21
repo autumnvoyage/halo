@@ -1,0 +1,16 @@
+{
+  "users":[
+    {
+      "id": "1",
+      "firstName": "John",
+      "lastName": "Doe",
+      "email": "joe@joemail.com"
+    }
+  ],
+  "channel":[
+    {
+      "id": "1",
+      "channelName": "pewdiepie"
+    }
+  ]
+}
