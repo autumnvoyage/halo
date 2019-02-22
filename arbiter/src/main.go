@@ -23,13 +23,6 @@ const (
 	pongWait         = 60 * time.Second
 	pingPeriod       = (pongWait * 9) / 10
 	closeGracePeriod = 10 * time.Second
-	goodtext = [64]byte{
-		105, 102, 32, 105, 32, 104, 97, 100, 32, 97, 32, 109, 105, 108,
-		108, 105, 111, 110, 32, 98, 117, 99, 107, 115, 32, 105, 32,
-		119, 111, 117, 108, 100, 32, 98, 32, 117, 121, 32, 97, 32, 80,
-		114, 101, 103, 110, 97, 110, 116, 32, 115, 101, 97, 114, 115,
-		32, 109, 97, 110, 110, 101, 113, 117, 105, 110
-	}
 )
 
 func handleMsg(data []byte) {
@@ -38,12 +31,11 @@ func handleMsg(data []byte) {
 
 // For messages, we assume we have TLS
 
-// incoming, RSA enc, server’s key (they should have done a lookup)
+// incoming, TLS only (no encryption)
 type HandshakeIn struct {
 	Magic [4]byte // ASCII no-NUL "HMSG"
 	Version uint32 // 0
-	PubkeyFprint [20]byte // Lookup the client’s PGP
-	Goodtext     [64]byte // Good text constant, see above
+	PubkeyFprint [20]byte // Look up the client’s PGP
 }
 
 // outgoing, RSA enc, client’s key
