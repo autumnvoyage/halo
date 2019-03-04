@@ -10,19 +10,28 @@ if [ "${BUILD}" = '' ]; then
 	echo "Build directory: ${BUILD}"
 fi
 
+if [ "$1" = '' ]; then
+	echo '';
+	echo 'HALO build script';
+	echo 'Copyright (C) 2018-2019 HALO Contributors';
+	echo 'Valid targets: arbiter bastion browser clean cli electron';
+	echo '';
+	exit 3;
+fi
+
 for arg in $@; do
 	if [ "${arg}" = 'arbiter' ]; then
-		source util/target/arbiter.sh;
+		. util/target/arbiter.sh;
 	elif [ "${arg}" = 'bastion' ]; then
-		source util/target/bastion.sh;
+		. util/target/bastion.sh;
 	elif [ "${arg}" = 'electron' ]; then
-		source util/target/electron.sh;
+		. util/target/electron.sh;
 	elif [ "${arg}" = 'browser' ]; then
-		source util/target/browser.sh;
+		. util/target/browser.sh;
 	elif [ "${arg}" = 'cli' ]; then
-		source util/target/cli.sh;
+		. util/target/cli.sh;
 	elif [ "${arg}" = 'clean' ]; then
-		source util/target/clean.sh;
+		. util/target/clean.sh;
 	else
 		echo 'Must specify a valid build target as an argument. Exiting...';
 		exit 2;

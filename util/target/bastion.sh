@@ -15,4 +15,4 @@ COPYLIB='bastion/lib/halo-bastion.service';
 OUTNAME='halo-bastion';
 
 # Execute the build
-source util/lib/golang_bin.sh;
+. util/lib/golang_bin.sh;

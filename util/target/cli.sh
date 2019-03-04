@@ -16,4 +16,4 @@ LIBS='';
 OUTNAME='halo-cli';
 
 # Execute the build
-source util/lib/cc_bin.sh;
+. util/lib/cc_bin.sh;

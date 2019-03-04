@@ -9,5 +9,7 @@ elif [ "${BUILD}" = '' ]; then
 	exit 4;
 fi
 
-cd webclient;
-npm run build:browser;
+CWD="${PWD}";
+cd "${CWD}/frontend";
+#npm run build:browser;
+cd "${CWD}";

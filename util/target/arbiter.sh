@@ -15,4 +15,4 @@ COPYLIB='arbiter/lib/halo-arbiter.service';
 OUTNAME='halo-arbiter';
 
 # Execute the build
-source util/lib/golang_bin.sh;
+. util/lib/golang_bin.sh;

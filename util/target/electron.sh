@@ -9,5 +9,7 @@ elif [ "${BUILD}" = '' ]; then
 	exit 4;
 fi
 
-cd webclient;
-npm run build:electron;
+CWD="${PWD}";
+cd "${CWD}/webclient";
+#npm run build:electron;
+cd "${CWD}";
