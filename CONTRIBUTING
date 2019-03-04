@@ -1,0 +1,31 @@
+Halo
+
+qMMM       mmm        .jAm,       ,MMMj            ,amMMMMMmm,
+ MMM       MMM        ^  MMn       MMM           zAMP       ^MAs
+ MMMaaaaaaaMMM     zMMMmmmMMm,     MMM          ^^^           MMM:
+ MMMi      MMM   ,MMM      ^MMn    MMM        ,            ,mMMP
+.MMMl      MMM, dMMm         MMm. dHHHHHHHHHHHP         IMMMP
+
+Your self-hosted, federated video sharing platform
+
+*****
+
+CONTRIBUTOR’S GUIDE
+
+*****
+
+This document explains the layout of the Halo repository and offers a quick
+guide on getting the software up and running from source.
+
+arbiter/  -- codebase for the Halo Arbiter backend
+bastion/  -- codebase for the Halo Bastion backend
+cli/      -- the Halo command-line interface, used for testing
+frontend/ -- the Halo web client
+util/     -- POSIX shell scripts for automating the dev process
+
+You’ll find ‘util/build.sh’ to be the main instrument for building the backend
+binaries. If you run it without arguments, it should print out what targets
+are available. Specify as many of them as you like, and it will execute them
+sequentially. Note that the script expects to be run from the repository root.
+The build script places its output in the ‘build/’ directory beneath the repo
+root, but if you want it elsewhere just set $BUILD to your desired location.
