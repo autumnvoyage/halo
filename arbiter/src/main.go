@@ -2,12 +2,20 @@ package main
 
 import (
 	"flag"
+	"io"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
+	"unicode/utf8"
 
 	"github.com/gorilla/websocket"
 )
+
+type SessionCatalog struct {
+	SessKey [32]byte
+	SessId uint64
+}
 
 var (
 	upgrader = websocket.Upgrader{
@@ -15,6 +23,7 @@ var (
 		WriteBufferSize: 1024,
 	}
 	addr = flag.String("addr", "127.0.0.1:1941", "HTTP service address")
+	sessions = []SessionCatalog
 )
 
 const (
@@ -25,8 +34,23 @@ const (
 	closeGracePeriod = 10 * time.Second
 )
 
-func handleMsg(data []byte) {
-
+func handleMsg(data string) {
+	if data[0:5] == "EMSG" {
+		var sessKey [32]byte
+		found := false
+		sessId := strconv.Atoi(data[5:13])
+		for _, elem := range sessions {
+			if elem.SessId == sessId {
+				sessKey = elem.SessKey
+				found = true
+				break
+			}
+		}
+		if !found {
+			log.Println("Bad session ID sent in EMSG, session ID: %i", sessId)
+			return
+		}
+	}
 }
 
 // For messages, we assume we have TLS
@@ -60,13 +84,25 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	log.Println("Upgraded HTTP to WebSocket.")
+	defer conn.Close()
 	for {
-		msgType, data, err := conn.ReadJSON()
+		mt, d, err := conn.ReadMessage()
 		if err != nil {
-			log.Fatalf("Conn.ReadJSON() failed: %v", err)
+			if err != io.EOF {
+				log.Println("Conn.ReadMessage() failed: %v", err)
+			}
 			return
 		}
-		handleMsg(data)
+		if mt == websocket.TextMessage {
+			if !utf8.Valid(d) {
+				conn.WriteControl(websocket.CloseMessage,
+					websocket.FormatCloseMessage(
+						websocket.CloseInvalidFramePayloadData, ""),
+					time.Time{})
+				log.Println("ReadAll: invalid UTF-8")
+			}
+		}
+		handleMsg(d)
 	}
 }
 
