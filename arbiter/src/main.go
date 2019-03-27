@@ -23,7 +23,7 @@ var (
 		WriteBufferSize: 1024,
 	}
 	addr = flag.String("addr", "127.0.0.1:1941", "HTTP service address")
-	sessions = []SessionCatalog
+	sessions []SessionCatalog
 )
 
 const (
@@ -36,12 +36,17 @@ const (
 
 func handleMsg(data string) {
 	if data[0:5] == "EMSG" {
-		var sessKey [32]byte
+		//var sessKey [32]byte
 		found := false
-		sessId := strconv.Atoi(data[5:13])
+		sessId_, err := strconv.Atoi(data[5:13])
+		sessId := uint64(sessId_)
+		if err != nil {
+			log.Println("Invalid session ID sent in EMSG: %i")
+			return
+		}
 		for _, elem := range sessions {
 			if elem.SessId == sessId {
-				sessKey = elem.SessKey
+				//sessKey = elem.SessKey
 				found = true
 				break
 			}
@@ -102,7 +107,7 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 				log.Println("ReadAll: invalid UTF-8")
 			}
 		}
-		handleMsg(d)
+		handleMsg(string(d))
 	}
 }
 
