@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/aes"
 	"flag"
 	"io"
 	"log"
@@ -34,19 +35,20 @@ const (
 	closeGracePeriod = 10 * time.Second
 )
 
-func handleMsg(data string) {
-	if data[0:5] == "EMSG" {
-		//var sessKey [32]byte
+func handleMsg(data []byte) {
+	magic := string(data[0:5])
+	if magic == "EMSG" {
+		var sessKey [32]byte
 		found := false
-		sessId_, err := strconv.Atoi(data[5:13])
-		sessId := uint64(sessId_)
+		sessId_, err := strconv.Atoi(string(data[5:13]))
 		if err != nil {
 			log.Println("Invalid session ID sent in EMSG: %i")
 			return
 		}
+		sessId := uint64(sessId_)
 		for _, elem := range sessions {
 			if elem.SessId == sessId {
-				//sessKey = elem.SessKey
+				sessKey = elem.SessKey
 				found = true
 				break
 			}
@@ -55,6 +57,13 @@ func handleMsg(data string) {
 			log.Println("Bad session ID sent in EMSG, session ID: %i", sessId)
 			return
 		}
+		ciph, err := aes.NewCipher(sessKey[:])
+		if err != nil {
+			log.Println("Failed to create AES: cipher: %v", err)
+		}
+		ddata := make([]byte, len(data) - 12)
+		edata := data[13:]
+		ciph.Decrypt(ddata, edata)
 	}
 }
 
@@ -107,7 +116,7 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 				log.Println("ReadAll: invalid UTF-8")
 			}
 		}
-		handleMsg(string(d))
+		handleMsg(d)
 	}
 }
 
