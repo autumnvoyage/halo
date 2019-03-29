@@ -9,10 +9,15 @@ elif [ "${BUILD}" = '' ]; then
 	exit 4;
 fi
 
-GODEPS='github.com/graphql-go/graphql';
-GOFILES='arbiter/src/main.go';
-COPYLIB='arbiter/lib/halo-arbiter.service';
-OUTNAME='halo-arbiter';
+CWD="${PWD}";
+PROJECT='arbiter';
+PROJDIR="${PWD}/${PROJECT}";
+MODULEDIR="${PROJDIR}/src";
+COPYLIB="${PROJDIR}/lib/halo-${PROJECT}.service";
+OUTNAME="halo-${PROJECT}";
 
 # Execute the build
 . util/lib/golang_bin.sh;
+[ "$1" = '1' ] && . util/lib/golang_test.sh;
+
+unset CWD PROJECT PROJDIR MODULEDIR COPYLIB OUTNAME;

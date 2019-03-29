@@ -2,16 +2,14 @@
 #
 
 mkdir -p "${BUILD}/bin" "${BUILD}/lib";
+cd "${MODULEDIR}";
 
-for dep in ${GODEPS}; do
-	go get ${dep};
-	go install ${dep};
-done
-unset dep;
-
-go build -v -o "${BUILD}/bin/${OUTNAME}" ${GOFILES};
+go build ./...;
+mv "${OUTNAME}" "${BUILD}/bin";
 
 for file in ${COPYLIB}; do
 	cp "${file}" "${BUILD}/lib/";
 done
 unset file;
+
+cd "${CWD}";

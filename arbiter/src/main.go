@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/aes"
+	"errors"
 	"flag"
 	"io"
 	"log"
@@ -35,15 +36,38 @@ const (
 	closeGracePeriod = 10 * time.Second
 )
 
-func handleMsg(data []byte) {
+func encryptData(indata []byte, key []byte) ([]byte, error) {
+	ciph, err := aes.NewCipher(key)
+	if err != nil {
+		log.Println("Failed to create AES cipher:", err)
+		return nil, err
+	}
+	outdata := make([]byte, len(indata))
+	ciph.Encrypt(outdata, indata)
+	return outdata, nil
+}
+
+func decryptData(indata []byte, key []byte) ([]byte, error) {
+	ciph, err := aes.NewCipher(key)
+	if err != nil {
+		log.Println("Failed to create AES: cipher:", err)
+		return nil, err
+	}
+	outdata := make([]byte, len(indata))
+	ciph.Decrypt(outdata, indata)
+	return outdata, nil
+}
+
+func handleMsg(data []byte) error {
 	magic := string(data[0:5])
 	if magic == "EMSG" {
 		var sessKey [32]byte
 		found := false
 		sessId_, err := strconv.Atoi(string(data[5:13]))
 		if err != nil {
-			log.Println("Invalid session ID sent in EMSG: %i")
-			return
+			log.Println("Invalid session ID sent in EMSG:", sessId_)
+			return errors.New("Invalid session ID sent in EMSG: " +
+				string(sessId_))
 		}
 		sessId := uint64(sessId_)
 		for _, elem := range sessions {
@@ -54,17 +78,17 @@ func handleMsg(data []byte) {
 			}
 		}
 		if !found {
-			log.Println("Bad session ID sent in EMSG, session ID: %i", sessId)
-			return
+			log.Println("Bad session ID sent in EMSG, session ID:", sessId)
+			return errors.New("Bad session ID sent in EMSG, session ID: " +
+				string(sessId))
 		}
-		ciph, err := aes.NewCipher(sessKey[:])
+		pload, err := decryptData(data, sessKey[:])
 		if err != nil {
-			log.Println("Failed to create AES: cipher: %v", err)
+			return err
 		}
-		ddata := make([]byte, len(data) - 12)
-		edata := data[13:]
-		ciph.Decrypt(ddata, edata)
+		parseEMSG(pload)
 	}
+	return nil
 }
 
 // For messages, we assume we have TLS
@@ -91,6 +115,10 @@ type MessageIn struct {
 	Payload []byte // decrypted with AES-256 sesskey
 }
 
+func parseEMSG(data []byte) error {
+	return nil
+}
+
 func wsHandler(w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -103,7 +131,7 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 		mt, d, err := conn.ReadMessage()
 		if err != nil {
 			if err != io.EOF {
-				log.Println("Conn.ReadMessage() failed: %v", err)
+				log.Println("Conn.ReadMessage() failed:", err)
 			}
 			return
 		}

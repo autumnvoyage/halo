@@ -9,10 +9,15 @@ elif [ "${BUILD}" = '' ]; then
 	exit 4;
 fi
 
-GODEPS='github.com/graphql-go/graphql';
-GOFILES='bastion/src/main.go';
-COPYLIB='bastion/lib/halo-bastion.service';
-OUTNAME='halo-bastion';
+CWD="${PWD}";
+PROJECT='bastion';
+PROJDIR="${PWD}/${PROJECT}";
+MODULEDIR="${PROJDIR}/src";
+COPYLIB="${PROJDIR}/lib/halo-${PROJECT}.service";
+OUTNAME="halo-${PROJECT}";
 
 # Execute the build
 . util/lib/golang_bin.sh;
+[ "$1" = '1' ] && . util/lib/golang_test.sh;
+
+unset CWD PROJECT PROJDIR MODULEDIR COPYLIB OUTNAME;
