@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"strconv"
 	"time"
-	"unicode/utf8"
 
 	"github.com/gorilla/websocket"
 )
@@ -101,9 +100,43 @@ func handleMsg(data []byte) error {
 
 // incoming, TLS only (no encryption)
 type HandshakeIn struct {
-	Magic [4]byte // ASCII no-NUL "HMSG"
 	Version uint32 // 0
 	PubkeyFprint [20]byte // Look up the client’s PGP
+}
+
+func MarshalHandshakeIn(d []byte) (HandshakeIn, error) {
+	var bad HandshakeIn
+	magic := string(d[0:5])
+	if magic != "HMSG" {
+		return bad, errors.New("Bad Magic bytes for HandshakeIn")
+	}
+	dlen := len(d)
+	if dlen > 28 {
+		return bad, errors.New("Bad length for HandshakeIn: " + string(dlen))
+	}
+	var ver [4]byte
+	copy(ver[:], d[5:9])
+	version := decodeNetUint32(ver)
+	if version > 0 {
+		return bad, errors.New("Client version unsupported: " + string(version))
+	}
+	var out = HandshakeIn{
+		Version: version,
+	}
+	copy(out.PubkeyFprint[:], d[9:29])
+	return out, nil
+}
+
+func (m HandshakeIn) Encode() ([]byte, error) {
+	out := make([]byte, 28)
+	out[0] = byte('H')
+	out[1] = byte('M')
+	out[2] = byte('S')
+	out[3] = byte('G')
+	ver := encodeNetUint32(m.Version)
+	copy(out[5:9], ver[:])
+	copy(out[9:29], m.PubkeyFprint[:])
+	return out, nil
 }
 
 // outgoing, RSA enc, client’s key
@@ -134,21 +167,12 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("Upgraded HTTP to WebSocket.")
 	defer conn.Close()
 	for {
-		mt, d, err := conn.ReadMessage()
+		_, d, err := conn.ReadMessage()
 		if err != nil {
 			if err != io.EOF {
 				log.Println("Conn.ReadMessage() failed:", err)
 			}
 			return
-		}
-		if mt == websocket.TextMessage {
-			if !utf8.Valid(d) {
-				conn.WriteControl(websocket.CloseMessage,
-					websocket.FormatCloseMessage(
-						websocket.CloseInvalidFramePayloadData, ""),
-					time.Time{})
-				log.Println("ReadAll: invalid UTF-8")
-			}
 		}
 		handleMsg(d)
 	}
