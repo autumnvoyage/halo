@@ -1,23 +1,26 @@
 package main
 
 func decodeNetInt16(in [2]byte) int16 {
-	var out int16 = int16(in[0] << 8 | (in[1] & 0x7F))
-	if in[0] >> 7 == 1 {
-		return out * -1
-	} else {
-		return out
+	out := [2]int16{
+		int16(in[0]),
+		int16(in[1]),
 	}
+	return int16(out[1] | (out[0] << 8))
 }
 
 func encodeNetInt16(in int16) [2]byte {
 	return [2]byte{
-		byte((in & (0x7F << 8)) >> 8),
+		byte((uint16(in) & (0xFF << 8)) >> 8),
 		byte(in & 0xFF),
 	}
 }
 
 func decodeNetUint16(in [2]byte) uint16 {
-	return uint16(in[0] | (in[1] << 8))
+	out := [2]uint16{
+		uint16(in[0]),
+		uint16(in[1]),
+	}
+	return uint16(out[1] | (out[0] << 8))
 }
 
 func encodeNetUint16(in uint16) [2]byte {
@@ -28,18 +31,18 @@ func encodeNetUint16(in uint16) [2]byte {
 }
 
 func decodeNetInt32(in [4]byte) int32 {
-	var out = int32(in[0] & 0x7F | (in[1] << 8) | (in[2] << 16) |
-		(in[3] << 24))
-	if in[0] >> 7 == 1 {
-		return out * -1
-	} else {
-		return out
+	out := [4]int32{
+		int32(in[0]),
+		int32(in[1]),
+		int32(in[2]),
+		int32(in[3]),
 	}
+	return out[3] | (out[2] << 8) | (out[1] << 16) | (out[0] << 24)
 }
 
 func encodeNetInt32(in int32) [4]byte {
 	return [4]byte{
-		byte((in & (0x7F << 24)) >> 24),
+		byte((uint32(in) & (0xFF << 24)) >> 24),
 		byte((in & (0xFF << 16)) >> 16),
 		byte((in & (0xFF << 8)) >> 8),
 		byte(in & 0xFF),
@@ -47,7 +50,13 @@ func encodeNetInt32(in int32) [4]byte {
 }
 
 func decodeNetUint32(in [4]byte) uint32 {
-	return uint32(in[0] | (in[1] << 8) | (in[2] << 16) | (in[3] << 24))
+	out := [4]uint32{
+		uint32(in[0]),
+		uint32(in[1]),
+		uint32(in[2]),
+		uint32(in[3]),
+	}
+	return out[3] | (out[2] << 8) | (out[1] << 16) | (out[0] << 24)
 }
 
 func encodeNetUint32(in uint32) [4]byte {
@@ -60,19 +69,23 @@ func encodeNetUint32(in uint32) [4]byte {
 }
 
 func decodeNetInt64(in [8]byte) int64 {
-	var out = int64(in[0] & 0x7F | (in[1] << 8) | (in[2] << 16) |
-		(in[3] << 24) | (in[4] << 32) | (in[5] << 40) | (in[6] << 48) |
-		(in[7] << 56))
-	if in[0] >> 7 == 1 {
-		return out * -1
-	} else {
-		return out
+	out := [8]int64{
+		int64(in[0]),
+		int64(in[1]),
+		int64(in[2]),
+		int64(in[3]),
+		int64(in[4]),
+		int64(in[5]),
+		int64(in[6]),
+		int64(in[7]),
 	}
+	return out[7] | (out[6] << 8) | (out[5] << 16) | (out[4] << 24) |
+		(out[3] << 32) | (out[2] << 40) | (out[1] << 48) | (out[0] << 56)
 }
 
 func encodeNetInt64(in int64) [8]byte {
 	return [8]byte{
-		byte((in & (0x7F << 56)) >> 56),
+		byte((uint64(in) & (0xFF << 56)) >> 56),
 		byte((in & (0xFF << 48)) >> 48),
 		byte((in & (0xFF << 40)) >> 40),
 		byte((in & (0xFF << 32)) >> 32),
@@ -84,8 +97,18 @@ func encodeNetInt64(in int64) [8]byte {
 }
 
 func decodeNetUint64(in [8]byte) uint64 {
-	return uint64(in[0] | (in[1] << 8) | (in[2] << 16) | (in[3] << 24) |
-		(in[4] << 32) | (in[5] << 40) | (in[6] << 48) | (in[7] << 56))
+	out := [8]uint64{
+		uint64(in[0]),
+		uint64(in[1]),
+		uint64(in[2]),
+		uint64(in[3]),
+		uint64(in[4]),
+		uint64(in[5]),
+		uint64(in[6]),
+		uint64(in[7]),
+	}
+	return out[7] | (out[6] << 8) | (out[5] << 16) | (out[4] << 24) |
+		(out[3] << 32) | (out[2] << 40) | (out[1] << 48) | (out[0] << 56)
 }
 
 func encodeNetUint64(in uint64) [8]byte {
