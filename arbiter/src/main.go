@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/aes"
+	"crypto/cipher"
 	"errors"
 	"flag"
 	"io"
@@ -26,6 +27,7 @@ var (
 	}
 	addr = flag.String("addr", "127.0.0.1:1941", "HTTP service address")
 	sessions []SessionCatalog
+	nonce = [...]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, }
 )
 
 const (
@@ -39,22 +41,26 @@ const (
 func encryptData(indata []byte, key []byte) ([]byte, error) {
 	ciph, err := aes.NewCipher(key)
 	if err != nil {
-		log.Println("Failed to create AES cipher:", err)
-		return nil, err
+		panic(err.Error())
 	}
-	outdata := make([]byte, len(indata))
-	ciph.Encrypt(outdata, indata)
+	aesgcm, err := cipher.NewGCM(ciph)
+	if err != nil {
+		panic(err.Error())
+	}
+	outdata := aesgcm.Seal(nil, nonce[:], indata, nil)
 	return outdata, nil
 }
 
 func decryptData(indata []byte, key []byte) ([]byte, error) {
 	ciph, err := aes.NewCipher(key)
 	if err != nil {
-		log.Println("Failed to create AES: cipher:", err)
-		return nil, err
+		panic(err.Error())
 	}
-	outdata := make([]byte, len(indata))
-	ciph.Decrypt(outdata, indata)
+	aesgcm, err := cipher.NewGCM(ciph)
+	if err != nil {
+		panic(err.Error())
+	}
+	outdata, err := aesgcm.Open(nil, nonce[:], indata, nil)
 	return outdata, nil
 }
 

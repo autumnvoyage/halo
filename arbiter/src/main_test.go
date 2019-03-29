@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"testing"
 )
 
@@ -26,23 +25,24 @@ func TestCrypto(t *testing.T) {
 	key := testKey[:]
 	enc, err := encryptData(data, key)
 	if err != nil {
-		log.Println("TEST FAILURE:", err)
+		t.Fatal(err)
 		return
 	}
 	dec, err := decryptData(enc, key)
 	if err != nil {
-		log.Println("TEST FAILURE:", err)
+		t.Fatal(err)
 		return
 	}
 	// Verify contents are the same
 	if len(dec) != len(data) {
-		log.Println("TEST FAILURE: Decrypted data length is wrong")
+		t.Error("Decrypted data length is wrong")
 		return
 	}
-	for i, elem := range dec {
-		if elem != data[i] {
-			log.Println("TEST FAILURE: Decrypted data mismatch")
+	for i, _ := range dec {
+		if dec[i] != data[i] {
+			t.Errorf("Decrypted data mismatch\nExpected: %v\nWas: %v", data[i],
+				dec[i])
+			return
 		}
 	}
-	log.Println("TestCrypto succeeded.")
 }
