@@ -3,9 +3,11 @@ package main
 import (
 	"crypto/aes"
 	"crypto/cipher"
+	"encoding/hex"
 	"errors"
 	"flag"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"strconv"
@@ -14,7 +16,7 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-type SessionCatalog struct {
+type Session struct {
 	SessKey [32]byte
 	SessId uint64
 }
@@ -25,7 +27,7 @@ var (
 		WriteBufferSize: 1024,
 	}
 	addr = flag.String("addr", "127.0.0.1:1941", "HTTP service address")
-	sessions []SessionCatalog
+	sessions []Session
 	nonce = [...]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, }
 )
 
@@ -70,7 +72,6 @@ func handleMsg(data []byte) error {
 		found := false
 		sessId_, err := strconv.Atoi(string(data[5:13]))
 		if err != nil {
-			log.Println("Invalid session ID sent in EMSG:", sessId_)
 			return errors.New("Invalid session ID sent in EMSG: " +
 				string(sessId_))
 		}
@@ -83,7 +84,6 @@ func handleMsg(data []byte) error {
 			}
 		}
 		if !found {
-			log.Println("Bad session ID sent in EMSG, session ID:", sessId)
 			return errors.New("Bad session ID sent in EMSG, session ID: " +
 				string(sessId))
 		}
@@ -92,51 +92,36 @@ func handleMsg(data []byte) error {
 			return err
 		}
 		parseEMSG(pload)
+	} else if magic == "HMSG" {
+		var ver [4]byte
+		copy(ver[:], data[5:9])
+		version := decodeNetUint32(ver)
+		if version > 0 {
+			return errors.New("Version requested is unsupported: " +
+				string(version))
+		}
+		var fprint [20]byte
+		copy(fprint[:], data[9:29])
+		fp := hex.EncodeToString(fprint[:])
+		req := "https://pgp.key-server.io/pks/lookup?op=get&search=0x" + fp
+		resp, err := http.Get(req)
+		if err != nil {
+			return err
+		}
+		defer resp.Body.Close()
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return err
+		}
+		log.Println(body)
 	}
 	return nil
 }
-
-// For messages, we assume we have TLS
 
 // incoming, TLS only (no encryption)
 type HandshakeIn struct {
 	Version uint32 // 0
 	PubkeyFprint [20]byte // Look up the client’s PGP
-}
-
-func MarshalHandshakeIn(d []byte) (HandshakeIn, error) {
-	var bad HandshakeIn
-	magic := string(d[0:5])
-	if magic != "HMSG" {
-		return bad, errors.New("Bad Magic bytes for HandshakeIn")
-	}
-	dlen := len(d)
-	if dlen > 28 {
-		return bad, errors.New("Bad length for HandshakeIn: " + string(dlen))
-	}
-	var ver [4]byte
-	copy(ver[:], d[5:9])
-	version := decodeNetUint32(ver)
-	if version > 0 {
-		return bad, errors.New("Client version unsupported: " + string(version))
-	}
-	var out = HandshakeIn{
-		Version: version,
-	}
-	copy(out.PubkeyFprint[:], d[9:29])
-	return out, nil
-}
-
-func (m HandshakeIn) Encode() ([]byte, error) {
-	out := make([]byte, 28)
-	out[0] = byte('H')
-	out[1] = byte('M')
-	out[2] = byte('S')
-	out[3] = byte('G')
-	ver := encodeNetUint32(m.Version)
-	copy(out[5:9], ver[:])
-	copy(out[9:29], m.PubkeyFprint[:])
-	return out, nil
 }
 
 // outgoing, RSA enc, client’s key
