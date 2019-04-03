@@ -1,23 +1,36 @@
 #!/bin/sh
 #
 
-if ! command -v go 1>/dev/null; then
-	echo 'Go installation not found. Exiting...';
-	exit 3;
-elif [ "${BUILD}" = '' ]; then
-	echo 'Build location not specified. Exiting...';
-	exit 4;
+echo 'Compiling dependencies...';
+
+if [ "$1" = '1' ]; then
+	# Testing
+	. util/target/halolib.sh 3;
+else
+	. util/target/halolib.sh 2;
 fi
 
-CWD="${PWD}";
-PROJECT='arbiter';
-PROJDIR="${PWD}/${PROJECT}";
-MODULEDIR="${PROJDIR}/src";
-COPYLIB="${PROJDIR}/lib/halo-${PROJECT}.service";
-OUTNAME="halo-${PROJECT}";
+zgLibs='halo';
+
+zgCWD="${PWD}";
+zgProject='arbiter';
+zgProjDir="${zgCWD}/${zgProject}";
+zgSrcDir="${zgProjDir}/src";
+zgTestDir="${zgProjDir}/test";
+zgToCopy="${zgProjDir}/lib/halo-${zgProject}.service";
+zgOutName="halo-${zgProject}";
+
+# Cleanup
+export zgOutName zgToCopy zgTestDir zgSrcDir zgProjDir zgProject zgCWD zgLibs;
 
 # Execute the build
-. util/lib/golang_bin.sh;
-[ "$1" = '1' ] && . util/lib/golang_test.sh;
+if [ "$1" = '1' ]; then
+	echo 'Compiling test binary...';
+	. util/lib/golang_testbin.sh;
+else
+	echo 'Compiling binary...';
+	. util/lib/golang_bin.sh;
+fi
 
-unset CWD PROJECT PROJDIR MODULEDIR COPYLIB OUTNAME;
+# Cleanup
+unset zgOutName zgToCopy zgTestDir zgSrcDir zgProjDir zgProject zgCWD zgLibs;

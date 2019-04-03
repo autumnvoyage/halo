@@ -1,13 +1,12 @@
 #!/bin/sh
 #
 
-. util/lib/golang_env.sh 0;
+. util/lib/golang_env.sh 1;
 
-_outfile="${Z1_BUILD}/bin/${zgOutName}";
+_outfile="${Z1_BUILD}/test/bin/${zgOutName}";
 
 if [ "${zgRelease}" = '1' ]; then
-	_srcfiles=$(find "${zgSrcDir}" -type f -name '*.go');
-	echo "Source files: ${_srcfiles}";
+	_srcfiles=$(find "${zgTestDir}" -type f -name '*.go');
 	for _file in ${_srcfiles}; do
 		_out="${Z1_BUILD}/obj/$(basename ${_file}).o";
 		${zgGocc} ${zgGoflags} ${zgGoflags_R} -o "${_out}" "${_file}";
@@ -19,11 +18,10 @@ if [ "${zgRelease}" = '1' ]; then
 		_libs="${zgLibs}";
 	fi
 	${zgGolink} ${zgGolinkflags} ${zgGolinkflags_R} -o "${_outfile}" \
-	            $(find "${Z1_BUILD}/obj" -type f -name '*.go.o') ${_libs};
+	            $(find "${Z1_BUILD}/obj" -type f -name '*.o') ${_libs};
 	unset _libs;
 else
-	_srcfiles=$(find "${zgSrcDir}" -type f -name '*.go');
-	echo "Source files: ${_srcfiles}";
+	_srcfiles=$(find "${zgTestDir}" -type f -name '*.go');
 	for _file in ${_srcfiles}; do
 		_out="${Z1_BUILD}/obj/$(basename ${_file}).o";
 		${zgGocc} ${zgGoflags} ${zgGoflags_D} -o "${_out}" "${_file}";
@@ -35,7 +33,7 @@ else
 		_libs="${zgLibs}";
 	fi
 	${zgGolink} ${zgGolinkflags} ${zgGolinkflags_D} -o "${_outfile}" \
-	            $(find "${Z1_BUILD}/obj" -type f -name '*.go.o') ${_libs};
+	            $(find "${Z1_BUILD}/obj" -type f -name '*.o') ${_libs};
 	unset _libs;
 fi
 

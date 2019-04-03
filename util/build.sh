@@ -1,53 +1,82 @@
 #!/bin/sh
 #
 
-if [ "${BUILD}" = '' ]; then
-	BUILD="$(dirname "$(readlink -f "$0")")/../build";
-	echo "Build directory: ./build";
-else
-	echo "Build directory: ${BUILD}";
-fi
-
+# Startup splash
 echo '';
-echo 'HALO build script';
+echo 'Z1 build system, for HALO';
 echo 'Copyright (C) 2018-2019 HALO Contributors';
 echo '';
 
-if [ "$1" = '' ]; then
-	echo 'Valid targets: arbiter bastion browser clean cli electron';
+if [ "$1" = '' ] || [ "$1" = '-h' ] || [ "$1" = '--help' ]; then
+	echo 'Usage: util/build.sh [options] <target ...>';
 	echo '';
-	unset BUILD;
-	exit 3;
+	echo 'Options:';
+	echo '    -r  Do a release build';
+	echo '    -i  Install selected targets';
+	echo '';
+	echo 'Valid targets: arbiter bastion halolib browser cli electron clean';
+	echo '               test';
+	echo '';
+	unset z1fn_helptext;
+	exit 2;
+fi
+unset z1fn_helptext;
+
+if [ "${Z1_BUILD}" = '' ]; then
+	if [ "${BASH_SOURCE}" != '' ]; then
+		Z1_BUILD="$(dirname "${BASH_SOURCE}")/../build";
+	else
+		Z1_BUILD="$(dirname "$(readlink -f "$0")")/../build";
+	fi
+	echo "Build directory: ./build";
+else
+	echo "Build directory: ${Z1_BUILD}";
 fi
 
-test='0'
+mkdir -p "${Z1_BUILD}/bin" "${Z1_BUILD}/lib" "${Z1_BUILD}/obj";
+mkdir -p "${Z1_BUILD}/test/bin" "${Z1_BUILD}/test/lib";
+zgLibDirs="${Z1_BUILD}/lib";
+zgTestLibDirs="${Z1_BUILD}/test/lib";
 
-for arg in $@; do
-	[ "${arg}" = 'test' ] && test='1';
+zgTest=0;
+zgRelease=0;
+zgInstall=0;
+
+export zgInstall zgRelease zgTest zgTestLibDirs zgLibDirs Z1_BUILD;
+
+for _arg in $@; do
+	[ "${_arg}" = 'test' ] && zgTest=1;
+	[ "${_arg}" = '-r' ] && zgRelease=1;
+	[ "${_arg}" = '-i' ] && zgInstall=1;
 done
-unset arg;
+unset _arg;
 
-for arg in $@; do
-	echo "Executing target ${arg}..."
-	if [ "${arg}" = 'arbiter' ]; then
-		. util/target/arbiter.sh "$test";
-	elif [ "${arg}" = 'bastion' ]; then
-		. util/target/bastion.sh "$test";
-	elif [ "${arg}" = 'electron' ]; then
-		. util/target/electron.sh "$test";
-	elif [ "${arg}" = 'browser' ]; then
-		. util/target/browser.sh "$test";
-	elif [ "${arg}" = 'cli' ]; then
-		. util/target/cli.sh "$test";
-	elif [ "${arg}" = 'clean' ]; then
+for _arg in $@; do
+	echo "Executing target ${_arg}..."
+	if [ "${_arg}" = 'arbiter' ]; then
+		. util/target/arbiter.sh "${zgTest}";
+	elif [ "${_arg}" = 'bastion' ]; then
+		. util/target/bastion.sh "${zgTest}";
+	elif [ "${_arg}" = 'electron' ]; then
+		. util/target/electron.sh "${zgTest}";
+	elif [ "${_arg}" = 'browser' ]; then
+		. util/target/browser.sh "${zgTest}";
+	elif [ "${_arg}" = 'cli' ]; then
+		. util/target/cli.sh "${zgTest}";
+	elif [ "${_arg}" = 'halolib' ]; then
+		. util/target/halolib.sh "${zgTest}";
+	elif [ "${_arg}" = 'clean' ]; then
 		. util/target/clean.sh;
-	elif [ "${arg}" != 'test' ]; then
+	elif [ "${_arg}" != 'test' ]; then
 		echo 'Must specify a valid build target as an argument. Exiting...';
-		unset arg;
-		unset BUILD CWD;
-		exit 2;
+		unset _arg;
+		unset ZG_BUILD zgLibDirs zgTest zgRelease zgInstall;
+		exit 3;
 	fi
 done
-unset arg;
+unset _arg;
 
-unset BUILD;
+[ "${zgInstall}" = '1' ] && . util/lib/install.sh;
+
+unset Z1_BUILD zgLibDirs zgTest zgRelease zgInstall;
+exit 0;

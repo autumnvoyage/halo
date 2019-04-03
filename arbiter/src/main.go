@@ -16,11 +16,6 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-type Session struct {
-	SessKey [32]byte
-	SessId uint64
-}
-
 var (
 	upgrader = websocket.Upgrader{
 		ReadBufferSize:  1024,
@@ -38,32 +33,6 @@ const (
 	pingPeriod       = (pongWait * 9) / 10
 	closeGracePeriod = 10 * time.Second
 )
-
-func encryptData(indata []byte, key []byte) ([]byte, error) {
-	ciph, err := aes.NewCipher(key)
-	if err != nil {
-		panic(err.Error())
-	}
-	aesgcm, err := cipher.NewGCM(ciph)
-	if err != nil {
-		panic(err.Error())
-	}
-	outdata := aesgcm.Seal(nil, nonce[:], indata, nil)
-	return outdata, nil
-}
-
-func decryptData(indata []byte, key []byte) ([]byte, error) {
-	ciph, err := aes.NewCipher(key)
-	if err != nil {
-		panic(err.Error())
-	}
-	aesgcm, err := cipher.NewGCM(ciph)
-	if err != nil {
-		panic(err.Error())
-	}
-	outdata, err := aesgcm.Open(nil, nonce[:], indata, nil)
-	return outdata, nil
-}
 
 func handleMsg(data []byte) error {
 	magic := string(data[0:5])
@@ -87,7 +56,7 @@ func handleMsg(data []byte) error {
 			return errors.New("Bad session ID sent in EMSG, session ID: " +
 				string(sessId))
 		}
-		pload, err := decryptData(data, sessKey[:])
+		pload, err := DecryptData(data, sessKey[:])
 		if err != nil {
 			return err
 		}
@@ -116,27 +85,6 @@ func handleMsg(data []byte) error {
 		log.Println(body)
 	}
 	return nil
-}
-
-// incoming, TLS only (no encryption)
-type HandshakeIn struct {
-	Version uint32 // 0
-	PubkeyFprint [20]byte // Look up the client’s PGP
-}
-
-// outgoing, RSA enc, client’s key
-type HandshakeOut struct {
-	Magic [4]byte // ASCII no-NUL "HMSG"
-	Version uint32 // 0
-	TTL uint32 // Lifetime of session
-	SessKey [32]byte // AES-256, future msgs use this instead of RSA
-	SessId uint64 // Tag future comms
-}
-
-type MessageIn struct {
-	Magic [4]byte // ASCII no-NUL "EMSG"
-	SessId uint64
-	Payload []byte // decrypted with AES-256 sesskey
 }
 
 func parseEMSG(data []byte) error {
